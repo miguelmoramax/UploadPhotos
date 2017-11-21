@@ -1,8 +1,55 @@
-function start(){
+const querystring = require("querystring");
+const fs = require("fs");
+const formidable = require("formidable");
+
+function start(response){
   console.log("controlador de solicitud START se ha llamado");
+  let body='<html>'+
+  '<head>'+
+  '<meta http-equiv="Content-Type" content="text/html"'+
+  'charset=UTF-8"/>'+
+  '</head>'+
+  '<body>'+
+  '<form action="/upload" enctype="multipart/form-data" method="post">'+
+  '<input type = "file" name="upload">'+
+  '<input type="submit" value="Subir Archivo"/>'+
+  '</form>'+
+  '</body>'+
+  '</html>';
+  response.writeHead(200,{"Content-Type":"text/html"});
+  response.write(body);
+  response.end();
 }
-function upload() {
+
+function upload(response,request) {
   console.log("controlador de solicitud UPLOAD se ha llamado");
+
+  let form = new formidable.IncomingForm();
+  console.log("a punto de analizar 'parse' ");
+  form.parse(request,function (error,fields,files) {
+    console.log("parsing terminado");
+    /*Posible error en sistemas Windows:
+    intento de cambiar el nombre a un archivo ya existente*/
+    fs.rename(files.upload.path, "/tmp/test.png",function (error) {
+      if(error){
+        fs.unlink("/tmp/test.png");
+        fs.rename(files.upload.path, "/tmp/test.png");
+      }
+
+    });
+    response.writeHead(200,{"Content-Type":"text/html"});
+    response.write("received image: <br />");
+    response.write("<img src='/show'/>");
+    response.end();
+  })
+
+}
+
+function show(response){
+  console.log("Controlador de solicitud 'show' se ha llamado.");
+  response.writeHead(200,{"Content-Type":"image/png"});
+  fs.createReadStream("/tmp/test.png").pipe(response);
 }
 exports.start = start;
 exports.upload = upload;
+exports.show = show;
